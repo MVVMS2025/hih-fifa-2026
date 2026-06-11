@@ -1,0 +1,986 @@
+<%@ Page Language="C#" %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HIH FIFA World Cup 2026 - Guess the Score!</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+
+        :root {
+            --primary: #1a0533;
+            --secondary: #6c2bd9;
+            --accent: #f7c948;
+            --gold: #ffd700;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg: #0f0a1a;
+            --card: #1e1533;
+            --card-hover: #2a1f45;
+            --text: #e8e0f0;
+            --text-muted: #9b8fb5;
+            --locked-bg: #1a1225;
+            --locked-border: rgba(239, 68, 68, 0.25);
+            --early-bg: #151225;
+            --early-border: rgba(108, 43, 217, 0.15);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at 20% 50%, rgba(108, 43, 217, 0.15) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 20%, rgba(247, 201, 72, 0.08) 0%, transparent 50%),
+                        radial-gradient(ellipse at 50% 80%, rgba(108, 43, 217, 0.1) 0%, transparent 50%);
+            animation: bgPulse 15s ease-in-out infinite;
+            z-index: -1;
+        }
+
+        @keyframes bgPulse {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(-2%, 1%) rotate(1deg); }
+            66% { transform: translate(1%, -1%) rotate(-1deg); }
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, #2d1060 50%, var(--primary) 100%);
+            border-bottom: 3px solid var(--accent);
+            padding: 20px 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--accent), var(--gold), var(--accent), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--accent), var(--gold), #fff, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .header p { color: var(--text-muted); font-size: 0.95rem; margin-top: 5px; }
+        .header .emoji-row { font-size: 1.5rem; margin-bottom: 5px; }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+
+        .login-screen { display: flex; justify-content: center; align-items: center; min-height: 70vh; }
+
+        .login-card {
+            background: var(--card);
+            border: 1px solid rgba(108, 43, 217, 0.3);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .login-card h2 { font-size: 1.6rem; margin-bottom: 8px; color: var(--accent); }
+        .login-card p { color: var(--text-muted); margin-bottom: 25px; font-size: 0.9rem; }
+        .login-card .trophy { font-size: 4rem; margin-bottom: 15px; }
+
+        .form-group { margin-bottom: 18px; text-align: left; }
+
+        .form-group label {
+            display: block; font-size: 0.85rem; font-weight: 600;
+            color: var(--text-muted); margin-bottom: 6px;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%; padding: 12px 16px;
+            border: 2px solid rgba(108, 43, 217, 0.3);
+            border-radius: 12px; background: rgba(15, 10, 26, 0.8);
+            color: var(--text); font-family: 'Poppins', sans-serif;
+            font-size: 0.95rem; transition: all 0.3s;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none; border-color: var(--accent);
+            box-shadow: 0 0 15px rgba(247, 201, 72, 0.2);
+        }
+
+        .btn {
+            padding: 14px 32px; border: none; border-radius: 12px;
+            font-family: 'Poppins', sans-serif; font-weight: 700;
+            font-size: 1rem; cursor: pointer; transition: all 0.3s;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--secondary), #8b5cf6);
+            color: white; width: 100%;
+            box-shadow: 0 4px 20px rgba(108, 43, 217, 0.4);
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 30px rgba(108, 43, 217, 0.6); }
+
+        .btn-gold { background: linear-gradient(135deg, var(--accent), var(--gold)); color: var(--primary); }
+        .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(247, 201, 72, 0.4); }
+
+        .btn-sm { padding: 8px 20px; font-size: 0.8rem; }
+
+        .nav-tabs { display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; justify-content: center; }
+
+        .nav-tab {
+            padding: 10px 24px; border: 2px solid rgba(108, 43, 217, 0.3);
+            border-radius: 50px; background: transparent; color: var(--text-muted);
+            font-family: 'Poppins', sans-serif; font-weight: 600;
+            font-size: 0.85rem; cursor: pointer; transition: all 0.3s;
+        }
+        .nav-tab:hover { border-color: var(--secondary); color: var(--text); }
+        .nav-tab.active { background: linear-gradient(135deg, var(--secondary), #8b5cf6); border-color: var(--secondary); color: white; }
+
+        .stats-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 25px; }
+
+        .stat-card {
+            background: var(--card); border: 1px solid rgba(108, 43, 217, 0.2);
+            border-radius: 16px; padding: 18px; text-align: center;
+        }
+        .stat-card .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--accent); }
+        .stat-card .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+
+        .welcome-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--card); border: 1px solid rgba(108, 43, 217, 0.2);
+            border-radius: 16px; padding: 15px 25px; margin-bottom: 20px;
+            flex-wrap: wrap; gap: 10px;
+        }
+        .welcome-bar .user-info { display: flex; align-items: center; gap: 12px; }
+        .welcome-bar .avatar {
+            width: 42px; height: 42px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--secondary), var(--accent));
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 1.1rem; color: white;
+        }
+        .welcome-bar .user-name { font-weight: 700; font-size: 1rem; }
+        .welcome-bar .user-dept { font-size: 0.8rem; color: var(--text-muted); }
+
+        .btn-logout {
+            background: rgba(239, 68, 68, 0.15); color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.3); padding: 8px 18px;
+            border-radius: 10px; font-family: 'Poppins', sans-serif;
+            font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: all 0.3s;
+        }
+        .btn-logout:hover { background: rgba(239, 68, 68, 0.3); }
+
+        .group-filter { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; justify-content: center; }
+
+        .group-btn {
+            padding: 6px 14px; border: 1px solid rgba(108, 43, 217, 0.3);
+            border-radius: 8px; background: transparent; color: var(--text-muted);
+            font-family: 'Poppins', sans-serif; font-size: 0.75rem;
+            font-weight: 600; cursor: pointer; transition: all 0.3s;
+        }
+        .group-btn:hover, .group-btn.active { background: var(--secondary); border-color: var(--secondary); color: white; }
+
+        .matches-grid { display: grid; gap: 15px; }
+
+        .match-card {
+            background: var(--card); border: 1px solid rgba(108, 43, 217, 0.2);
+            border-radius: 16px; padding: 20px; transition: all 0.3s;
+            position: relative; overflow: hidden;
+        }
+        .match-card:hover { border-color: rgba(108, 43, 217, 0.5); transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); }
+
+        .match-card.predicted { border-color: rgba(16, 185, 129, 0.4); }
+        .match-card.predicted::before {
+            content: 'Predicted'; position: absolute; top: 12px; right: 15px;
+            font-size: 0.7rem; font-weight: 700; color: var(--success);
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        .match-card.locked { background: var(--locked-bg); border-color: var(--locked-border); opacity: 0.85; }
+        .match-card.locked:hover { transform: none; box-shadow: none; }
+
+        .match-card.early-lock { background: var(--early-bg); border-color: var(--early-border); opacity: 0.7; }
+        .match-card.early-lock:hover { transform: none; box-shadow: none; }
+
+        .lock-banner {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 10px; padding: 10px 16px; margin-top: 12px;
+            font-size: 0.8rem; font-weight: 700; color: var(--danger);
+        }
+
+        .early-banner {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            background: rgba(108, 43, 217, 0.1); border: 1px solid rgba(108, 43, 217, 0.25);
+            border-radius: 10px; padding: 10px 16px; margin-top: 12px;
+            font-size: 0.8rem; font-weight: 700; color: var(--text-muted);
+        }
+
+        .open-banner {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 10px; padding: 8px 14px; margin-top: 8px;
+            font-size: 0.75rem; font-weight: 700; color: var(--success);
+        }
+
+        .countdown-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 8px; padding: 5px 12px;
+            font-size: 0.72rem; font-weight: 700; color: var(--success); margin-top: 8px;
+        }
+
+        .countdown-badge.closing {
+            background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.3);
+            color: var(--danger); animation: pulseUrgent 1.5s infinite;
+        }
+
+        @keyframes pulseUrgent { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+        .match-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 5px; }
+
+        .match-group {
+            background: rgba(108, 43, 217, 0.3); padding: 4px 12px;
+            border-radius: 6px; font-size: 0.7rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        .match-date { font-size: 0.78rem; color: var(--text-muted); }
+        .match-venue { font-size: 0.72rem; color: var(--text-muted); font-style: italic; }
+
+        .match-teams { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 15px 0; }
+        .team { text-align: center; flex: 1; }
+        .team-name { font-weight: 700; font-size: 0.9rem; }
+
+        .vs-badge {
+            font-weight: 900; font-size: 1.1rem; color: var(--accent);
+            background: rgba(247, 201, 72, 0.1); width: 45px; height: 45px;
+            border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; flex-shrink: 0;
+        }
+
+        .score-input-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 15px; }
+
+        .score-input {
+            width: 65px; height: 50px; text-align: center;
+            font-size: 1.4rem; font-weight: 800; font-family: 'Poppins', sans-serif;
+            border: 2px solid rgba(108, 43, 217, 0.3); border-radius: 12px;
+            background: rgba(15, 10, 26, 0.8); color: var(--accent); transition: all 0.3s;
+        }
+        .score-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 15px rgba(247, 201, 72, 0.3); }
+        .score-input:disabled { opacity: 0.35; cursor: not-allowed; border-color: rgba(100, 80, 130, 0.2); }
+
+        .score-separator { font-size: 1.5rem; font-weight: 900; color: var(--text-muted); }
+        .match-actions { display: flex; justify-content: center; gap: 10px; margin-top: 12px; }
+
+        .leaderboard-table {
+            width: 100%; border-collapse: collapse; background: var(--card);
+            border-radius: 16px; overflow: hidden; border: 1px solid rgba(108, 43, 217, 0.2);
+        }
+        .leaderboard-table th {
+            background: linear-gradient(135deg, var(--secondary), #8b5cf6);
+            color: white; padding: 14px 20px; text-align: left;
+            font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .leaderboard-table td { padding: 14px 20px; border-bottom: 1px solid rgba(108, 43, 217, 0.1); font-size: 0.9rem; }
+        .leaderboard-table tr:hover td { background: var(--card-hover); }
+
+        .rank-badge {
+            width: 32px; height: 32px; border-radius: 50%;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 0.85rem;
+        }
+        .rank-1 { background: linear-gradient(135deg, #ffd700, #ffaa00); color: #1a0533; }
+        .rank-2 { background: linear-gradient(135deg, #c0c0c0, #a0a0a0); color: #1a0533; }
+        .rank-3 { background: linear-gradient(135deg, #cd7f32, #a0522d); color: white; }
+        .rank-other { background: rgba(108, 43, 217, 0.2); color: var(--text-muted); }
+
+        .points-legend {
+            background: var(--card); border: 1px solid rgba(108, 43, 217, 0.2);
+            border-radius: 16px; padding: 20px; margin-bottom: 25px;
+        }
+        .points-legend h3 { color: var(--accent); margin-bottom: 12px; font-size: 1rem; }
+        .legend-items { display: flex; gap: 20px; flex-wrap: wrap; }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; }
+        .legend-badge { padding: 4px 12px; border-radius: 8px; font-weight: 800; font-size: 0.8rem; }
+        .legend-badge.exact { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .legend-badge.result { background: rgba(247, 201, 72, 0.2); color: var(--accent); }
+        .legend-badge.wrong { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+
+        .prediction-card {
+            background: var(--card); border: 1px solid rgba(108, 43, 217, 0.2);
+            border-radius: 12px; padding: 15px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px; flex-wrap: wrap; gap: 10px;
+        }
+        .prediction-match { font-weight: 600; font-size: 0.9rem; }
+        .prediction-score {
+            font-weight: 800; font-size: 1.1rem; color: var(--accent);
+            background: rgba(247, 201, 72, 0.1); padding: 5px 15px; border-radius: 8px;
+        }
+
+        .admin-match-row {
+            background: var(--card); border: 1px solid rgba(108, 43, 217, 0.2);
+            border-radius: 12px; padding: 15px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px; flex-wrap: wrap; gap: 10px;
+        }
+        .admin-score-inputs { display: flex; align-items: center; gap: 8px; }
+        .admin-score-input {
+            width: 50px; height: 38px; text-align: center;
+            font-size: 1rem; font-weight: 700; font-family: 'Poppins', sans-serif;
+            border: 2px solid rgba(108, 43, 217, 0.3); border-radius: 8px;
+            background: rgba(15, 10, 26, 0.8); color: var(--accent);
+        }
+        .admin-score-input:focus { outline: none; border-color: var(--accent); }
+
+        .toast {
+            position: fixed; bottom: 30px; right: 30px; padding: 15px 25px;
+            border-radius: 12px; font-weight: 600; font-size: 0.9rem; z-index: 1000;
+            transform: translateX(150%);
+            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        }
+        .toast.show { transform: translateX(0); }
+        .toast.success { background: var(--success); color: white; }
+        .toast.error { background: var(--danger); color: white; }
+        .toast.info { background: var(--secondary); color: white; }
+
+        .section-title { font-size: 1.3rem; font-weight: 800; margin-bottom: 20px; color: var(--text); display: flex; align-items: center; gap: 10px; }
+        .hidden { display: none !important; }
+
+        .live-clock {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            background: rgba(108, 43, 217, 0.15); border: 1px solid rgba(108, 43, 217, 0.3);
+            border-radius: 10px; padding: 8px 18px; margin-bottom: 20px;
+            font-size: 0.82rem; font-weight: 600; color: var(--text-muted);
+        }
+        .live-clock .clock-time { color: var(--accent); font-weight: 800; font-size: 0.9rem; }
+
+        .rule-box {
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 10px; padding: 10px 18px; margin-bottom: 20px;
+            font-size: 0.78rem; font-weight: 600; color: var(--text-muted); flex-wrap: wrap;
+        }
+        .rule-box .rule-item { display: flex; align-items: center; gap: 5px; }
+        .rule-box .rule-closed { color: var(--danger); }
+        .rule-box .rule-open { color: var(--success); }
+        .rule-box .rule-started { color: var(--danger); }
+
+        #s4-workspace, #s4-bodyContainer { background: var(--bg) !important; overflow: visible !important; }
+        .ms-core-overlay { background: transparent !important; }
+        #contentRow { padding: 0 !important; margin: 0 !important; }
+        #s4-titlerow, .ms-breadcrumb-top, #suiteBarDelta, #SuiteNavPlaceHolder,
+        .ms-dialogHidden, #globalNavBox, .noindex, #sideNavBox,
+        #DeltaPlaceHolderLeftNavBar, #DeltaPlaceHolderPageTitleInTitleArea,
+        .ms-core-navigation, #titleAreaBox, .ms-mpSearchBox { display: none !important; }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.4rem; }
+            .match-teams { gap: 10px; }
+            .team-name { font-size: 0.78rem; }
+            .container { padding: 12px; }
+            .login-card { padding: 25px; margin: 0 10px; }
+            .stats-bar { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="emoji-row">&#9917;&#127942;&#127758;</div>
+        <h1>HIH Guess the Score</h1>
+        <p>FIFA World Cup 2026 &#8226; Staff Prediction Challenge</p>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <div id="loginScreen" class="container login-screen">
+        <div class="login-card">
+            <div class="trophy">&#127942;</div>
+            <h2>Welcome, Predictor!</h2>
+            <p>Enter your details to start predicting FIFA World Cup 2026 match scores</p>
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="staffName" placeholder="e.g. Ahmed Ali" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>Department</label>
+                <select id="staffDept">
+                    <option value="">Select Department</option>
+                    <option value="IT">IT</option>
+                    <option value="Front Office">Front Office</option>
+                    <option value="Housekeeping">Housekeeping</option>
+                    <option value="F&B">Food &amp; Beverage</option>
+                    <option value="Kitchen">Kitchen</option>
+                    <option value="Finance">Finance</option>
+                    <option value="HR">Human Resources</option>
+                    <option value="Engineering">Engineering</option>
+                    <option value="Sales & Marketing">Sales &amp; Marketing</option>
+                    <option value="Security">Security</option>
+                    <option value="Recreation">Recreation</option>
+                    <option value="Spa">Spa &amp; Wellness</option>
+                    <option value="Management">Management</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" onclick="login()">Enter the Game</button>
+        </div>
+    </div>
+
+    <div id="mainApp" class="container hidden">
+
+        <div class="welcome-bar">
+            <div class="user-info">
+                <div class="avatar" id="userAvatar"></div>
+                <div>
+                    <div class="user-name" id="userName"></div>
+                    <div class="user-dept" id="userDept"></div>
+                </div>
+            </div>
+            <button class="btn-logout" onclick="logout()">Switch User</button>
+        </div>
+
+        <div class="live-clock">
+            Maldives Time (MVT / UTC+5): <span class="clock-time" id="liveClock">--:--:--</span>
+        </div>
+
+        <div class="rule-box">
+            <span class="rule-item rule-closed">&#128274; &gt;12h before kickoff = LOCKED</span>
+            <span>|</span>
+            <span class="rule-item rule-open">&#9989; Within 12h of kickoff = OPEN</span>
+            <span>|</span>
+            <span class="rule-item rule-started">&#128683; After kickoff = LOCKED</span>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat-card"><div class="stat-value" id="statPredictions">0</div><div class="stat-label">Your Predictions</div></div>
+            <div class="stat-card"><div class="stat-value" id="statPoints">0</div><div class="stat-label">Your Points</div></div>
+            <div class="stat-card"><div class="stat-value" id="statExact">0</div><div class="stat-label">Exact Scores</div></div>
+            <div class="stat-card"><div class="stat-value" id="statPlayers">0</div><div class="stat-label">Total Players</div></div>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('matches')">Matches</button>
+            <button class="nav-tab" onclick="switchTab('predictions')">My Predictions</button>
+            <button class="nav-tab" onclick="switchTab('leaderboard')">Leaderboard</button>
+            <button class="nav-tab" onclick="switchTab('admin')">Admin</button>
+        </div>
+
+        <div id="tab-matches">
+            <div class="group-filter" id="groupFilter"></div>
+            <div class="matches-grid" id="matchesGrid"></div>
+        </div>
+
+        <div id="tab-predictions" class="hidden">
+            <div class="section-title">Your Predictions</div>
+            <div id="predictionsContainer"></div>
+        </div>
+
+        <div id="tab-leaderboard" class="hidden">
+            <div class="points-legend">
+                <h3>Scoring System</h3>
+                <div class="legend-items">
+                    <div class="legend-item"><span class="legend-badge exact">+5 pts</span><span>Exact Score</span></div>
+                    <div class="legend-item"><span class="legend-badge result">+3 pts</span><span>Correct Goal Diff</span></div>
+                    <div class="legend-item"><span class="legend-badge result">+1 pt</span><span>Correct Result (W/D/L)</span></div>
+                    <div class="legend-item"><span class="legend-badge wrong">0 pts</span><span>Wrong</span></div>
+                </div>
+            </div>
+            <div class="section-title">Leaderboard</div>
+            <div id="leaderboardContainer"></div>
+        </div>
+
+        <div id="tab-admin" class="hidden">
+            <div class="section-title">Admin Panel - Enter Actual Results</div>
+            <div class="form-group" style="max-width:300px;margin-bottom:20px;">
+                <label>Admin Password</label>
+                <input type="password" id="adminPass" placeholder="Enter admin password">
+            </div>
+            <div id="adminMatchesContainer"></div>
+            <div style="margin-top:20px;text-align:center;">
+                <button class="btn btn-gold" onclick="saveActualResults()">Save Results &amp; Calculate Points</button>
+            </div>
+            <div style="margin-top:15px;text-align:center;">
+                <button class="btn btn-primary btn-sm" onclick="exportData()">Export All Data (JSON)</button>
+                <button class="btn btn-primary btn-sm" style="margin-left:8px;background:linear-gradient(135deg,#ef4444,#dc2626);" onclick="resetAllData()">Reset All Data</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var MATCHES = [
+            { id:1,  group:"A", home:"Mexico", away:"South Africa", date:"Jun 11", time:"20:00 MVT", venue:"Mexico City", kickoffUTC:"2026-06-11T15:00:00Z" },
+            { id:2,  group:"A", home:"South Korea", away:"Czechia", date:"Jun 12", time:"02:00 MVT", venue:"Guadalajara", kickoffUTC:"2026-06-11T21:00:00Z" },
+            { id:3,  group:"B", home:"Canada", away:"Bosnia and Herzegovina", date:"Jun 12", time:"00:00 MVT", venue:"Toronto", kickoffUTC:"2026-06-11T19:00:00Z" },
+            { id:4,  group:"D", home:"USA", away:"Paraguay", date:"Jun 13", time:"06:00 MVT", venue:"Los Angeles", kickoffUTC:"2026-06-13T01:00:00Z" },
+            { id:5,  group:"C", home:"Haiti", away:"Scotland", date:"Jun 14", time:"06:00 MVT", venue:"Boston", kickoffUTC:"2026-06-14T01:00:00Z" },
+            { id:6,  group:"D", home:"Australia", away:"Turkiye", date:"Jun 14", time:"09:00 MVT", venue:"Vancouver", kickoffUTC:"2026-06-14T04:00:00Z" },
+            { id:7,  group:"C", home:"Brazil", away:"Morocco", date:"Jun 14", time:"03:00 MVT", venue:"New Jersey", kickoffUTC:"2026-06-13T22:00:00Z" },
+            { id:8,  group:"B", home:"Qatar", away:"Switzerland", date:"Jun 14", time:"00:00 MVT", venue:"San Francisco", kickoffUTC:"2026-06-13T19:00:00Z" },
+            { id:9,  group:"E", home:"Germany", away:"Curacao", date:"Jun 14", time:"22:00 MVT", venue:"Houston", kickoffUTC:"2026-06-14T17:00:00Z" },
+            { id:10, group:"F", home:"Netherlands", away:"Japan", date:"Jun 15", time:"01:00 MVT", venue:"Dallas", kickoffUTC:"2026-06-14T20:00:00Z" },
+            { id:11, group:"E", home:"Cote dIvoire", away:"Ecuador", date:"Jun 15", time:"04:00 MVT", venue:"Philadelphia", kickoffUTC:"2026-06-14T23:00:00Z" },
+            { id:12, group:"F", home:"Sweden", away:"Tunisia", date:"Jun 15", time:"07:00 MVT", venue:"Monterrey", kickoffUTC:"2026-06-15T02:00:00Z" },
+            { id:13, group:"H", home:"Spain", away:"Cape Verde", date:"Jun 15", time:"22:00 MVT", venue:"Atlanta", kickoffUTC:"2026-06-15T17:00:00Z" },
+            { id:14, group:"G", home:"Belgium", away:"Egypt", date:"Jun 16", time:"01:00 MVT", venue:"Seattle", kickoffUTC:"2026-06-15T20:00:00Z" },
+            { id:15, group:"H", home:"Saudi Arabia", away:"Uruguay", date:"Jun 16", time:"03:00 MVT", venue:"Miami", kickoffUTC:"2026-06-15T22:00:00Z" },
+            { id:16, group:"G", home:"Iran", away:"New Zealand", date:"Jun 16", time:"09:00 MVT", venue:"Los Angeles", kickoffUTC:"2026-06-16T04:00:00Z" },
+            { id:17, group:"I", home:"France", away:"Senegal", date:"Jun 17", time:"00:00 MVT", venue:"New Jersey", kickoffUTC:"2026-06-16T19:00:00Z" },
+            { id:18, group:"I", home:"Iraq", away:"Norway", date:"Jun 17", time:"03:00 MVT", venue:"Boston", kickoffUTC:"2026-06-16T22:00:00Z" },
+            { id:19, group:"J", home:"Argentina", away:"Algeria", date:"Jun 17", time:"06:00 MVT", venue:"Kansas City", kickoffUTC:"2026-06-17T01:00:00Z" },
+            { id:20, group:"J", home:"Austria", away:"Jordan", date:"Jun 17", time:"09:00 MVT", venue:"San Francisco", kickoffUTC:"2026-06-17T04:00:00Z" },
+            { id:21, group:"K", home:"Portugal", away:"DR Congo", date:"Jun 17", time:"22:00 MVT", venue:"Houston", kickoffUTC:"2026-06-17T17:00:00Z" },
+            { id:22, group:"L", home:"England", away:"Croatia", date:"Jun 18", time:"01:00 MVT", venue:"Dallas", kickoffUTC:"2026-06-17T20:00:00Z" },
+            { id:23, group:"L", home:"Ghana", away:"Panama", date:"Jun 18", time:"04:00 MVT", venue:"Toronto", kickoffUTC:"2026-06-17T23:00:00Z" },
+            { id:24, group:"K", home:"Uzbekistan", away:"Colombia", date:"Jun 18", time:"07:00 MVT", venue:"Mexico City", kickoffUTC:"2026-06-18T02:00:00Z" },
+            { id:25, group:"A", home:"Czechia", away:"South Africa", date:"Jun 18", time:"22:00 MVT", venue:"Atlanta", kickoffUTC:"2026-06-18T17:00:00Z" },
+            { id:26, group:"B", home:"Switzerland", away:"Bosnia and Herzegovina", date:"Jun 19", time:"01:00 MVT", venue:"Los Angeles", kickoffUTC:"2026-06-18T20:00:00Z" },
+            { id:27, group:"B", home:"Canada", away:"Qatar", date:"Jun 19", time:"04:00 MVT", venue:"Vancouver", kickoffUTC:"2026-06-18T23:00:00Z" },
+            { id:28, group:"A", home:"Mexico", away:"South Korea", date:"Jun 19", time:"07:00 MVT", venue:"Guadalajara", kickoffUTC:"2026-06-19T02:00:00Z" },
+            { id:29, group:"C", home:"Brazil", away:"Haiti", date:"Jun 20", time:"02:00 MVT", venue:"Philadelphia", kickoffUTC:"2026-06-19T21:00:00Z" },
+            { id:30, group:"C", home:"Scotland", away:"Morocco", date:"Jun 20", time:"05:00 MVT", venue:"Boston", kickoffUTC:"2026-06-20T00:00:00Z" },
+            { id:31, group:"D", home:"Turkiye", away:"Paraguay", date:"Jun 20", time:"00:00 MVT", venue:"San Francisco", kickoffUTC:"2026-06-19T19:00:00Z" },
+            { id:32, group:"D", home:"USA", away:"Australia", date:"Jun 20", time:"03:00 MVT", venue:"Seattle", kickoffUTC:"2026-06-19T22:00:00Z" },
+            { id:33, group:"E", home:"Germany", away:"Cote dIvoire", date:"Jun 20", time:"22:00 MVT", venue:"Toronto", kickoffUTC:"2026-06-20T17:00:00Z" },
+            { id:34, group:"E", home:"Ecuador", away:"Curacao", date:"Jun 21", time:"01:00 MVT", venue:"Kansas City", kickoffUTC:"2026-06-20T20:00:00Z" },
+            { id:35, group:"F", home:"Netherlands", away:"Sweden", date:"Jun 21", time:"04:00 MVT", venue:"Houston", kickoffUTC:"2026-06-20T23:00:00Z" },
+            { id:36, group:"F", home:"Tunisia", away:"Japan", date:"Jun 21", time:"07:00 MVT", venue:"Monterrey", kickoffUTC:"2026-06-21T02:00:00Z" },
+            { id:37, group:"H", home:"Uruguay", away:"Cape Verde", date:"Jun 21", time:"22:00 MVT", venue:"Kansas City", kickoffUTC:"2026-06-21T17:00:00Z" },
+            { id:38, group:"G", home:"Belgium", away:"Iran", date:"Jun 22", time:"01:00 MVT", venue:"Houston", kickoffUTC:"2026-06-21T20:00:00Z" },
+            { id:39, group:"H", home:"Spain", away:"Saudi Arabia", date:"Jun 22", time:"04:00 MVT", venue:"Miami", kickoffUTC:"2026-06-21T23:00:00Z" },
+            { id:40, group:"G", home:"Egypt", away:"New Zealand", date:"Jun 22", time:"07:00 MVT", venue:"Los Angeles", kickoffUTC:"2026-06-22T02:00:00Z" },
+            { id:41, group:"I", home:"France", away:"Iraq", date:"Jun 22", time:"22:00 MVT", venue:"Philadelphia", kickoffUTC:"2026-06-22T17:00:00Z" },
+            { id:42, group:"I", home:"Senegal", away:"Norway", date:"Jun 23", time:"01:00 MVT", venue:"Atlanta", kickoffUTC:"2026-06-22T20:00:00Z" },
+            { id:43, group:"J", home:"Argentina", away:"Austria", date:"Jun 23", time:"04:00 MVT", venue:"Miami", kickoffUTC:"2026-06-22T23:00:00Z" },
+            { id:44, group:"J", home:"Algeria", away:"Jordan", date:"Jun 23", time:"07:00 MVT", venue:"Seattle", kickoffUTC:"2026-06-23T02:00:00Z" },
+            { id:45, group:"K", home:"Portugal", away:"Uzbekistan", date:"Jun 23", time:"22:00 MVT", venue:"Dallas", kickoffUTC:"2026-06-23T17:00:00Z" },
+            { id:46, group:"L", home:"England", away:"Ghana", date:"Jun 24", time:"01:00 MVT", venue:"Atlanta", kickoffUTC:"2026-06-23T20:00:00Z" },
+            { id:47, group:"L", home:"Croatia", away:"Panama", date:"Jun 24", time:"04:00 MVT", venue:"Boston", kickoffUTC:"2026-06-23T23:00:00Z" },
+            { id:48, group:"K", home:"Colombia", away:"DR Congo", date:"Jun 24", time:"07:00 MVT", venue:"San Francisco", kickoffUTC:"2026-06-24T02:00:00Z" },
+            { id:49, group:"A", home:"South Africa", away:"South Korea", date:"Jun 25", time:"01:00 MVT", venue:"Dallas", kickoffUTC:"2026-06-24T20:00:00Z" },
+            { id:50, group:"A", home:"Czechia", away:"Mexico", date:"Jun 25", time:"01:00 MVT", venue:"Mexico City", kickoffUTC:"2026-06-24T20:00:00Z" },
+            { id:51, group:"B", home:"Bosnia and Herzegovina", away:"Qatar", date:"Jun 25", time:"05:00 MVT", venue:"Houston", kickoffUTC:"2026-06-25T00:00:00Z" },
+            { id:52, group:"B", home:"Switzerland", away:"Canada", date:"Jun 25", time:"05:00 MVT", venue:"Vancouver", kickoffUTC:"2026-06-25T00:00:00Z" },
+            { id:53, group:"D", home:"Turkiye", away:"USA", date:"Jun 26", time:"05:00 MVT", venue:"Los Angeles", kickoffUTC:"2026-06-26T00:00:00Z" },
+            { id:54, group:"D", home:"Paraguay", away:"Australia", date:"Jun 26", time:"05:00 MVT", venue:"Kansas City", kickoffUTC:"2026-06-26T00:00:00Z" },
+            { id:55, group:"C", home:"Morocco", away:"Haiti", date:"Jun 26", time:"01:00 MVT", venue:"Guadalajara", kickoffUTC:"2026-06-25T20:00:00Z" },
+            { id:56, group:"C", home:"Scotland", away:"Brazil", date:"Jun 26", time:"01:00 MVT", venue:"New Jersey", kickoffUTC:"2026-06-25T20:00:00Z" },
+            { id:57, group:"F", home:"Japan", away:"Sweden", date:"Jun 27", time:"01:00 MVT", venue:"Dallas", kickoffUTC:"2026-06-26T20:00:00Z" },
+            { id:58, group:"F", home:"Tunisia", away:"Netherlands", date:"Jun 27", time:"01:00 MVT", venue:"Monterrey", kickoffUTC:"2026-06-26T20:00:00Z" },
+            { id:59, group:"E", home:"Ecuador", away:"Germany", date:"Jun 27", time:"05:00 MVT", venue:"Philadelphia", kickoffUTC:"2026-06-27T00:00:00Z" },
+            { id:60, group:"E", home:"Curacao", away:"Cote dIvoire", date:"Jun 27", time:"05:00 MVT", venue:"Toronto", kickoffUTC:"2026-06-27T00:00:00Z" },
+            { id:61, group:"L", home:"Croatia", away:"Ghana", date:"Jun 27", time:"22:00 MVT", venue:"Philadelphia", kickoffUTC:"2026-06-27T17:00:00Z" },
+            { id:62, group:"L", home:"Panama", away:"England", date:"Jun 27", time:"22:00 MVT", venue:"New Jersey", kickoffUTC:"2026-06-27T17:00:00Z" },
+            { id:63, group:"K", home:"Colombia", away:"Portugal", date:"Jun 28", time:"01:00 MVT", venue:"Dallas", kickoffUTC:"2026-06-27T20:00:00Z" },
+            { id:64, group:"K", home:"DR Congo", away:"Uzbekistan", date:"Jun 28", time:"01:00 MVT", venue:"Mexico City", kickoffUTC:"2026-06-27T20:00:00Z" },
+            { id:65, group:"G", home:"New Zealand", away:"Belgium", date:"Jun 28", time:"05:00 MVT", venue:"San Francisco", kickoffUTC:"2026-06-28T00:00:00Z" },
+            { id:66, group:"G", home:"Egypt", away:"Iran", date:"Jun 28", time:"05:00 MVT", venue:"Seattle", kickoffUTC:"2026-06-28T00:00:00Z" },
+            { id:67, group:"H", home:"Cape Verde", away:"Saudi Arabia", date:"Jun 28", time:"01:00 MVT", venue:"Guadalajara", kickoffUTC:"2026-06-27T20:00:00Z" },
+            { id:68, group:"H", home:"Uruguay", away:"Spain", date:"Jun 28", time:"01:00 MVT", venue:"Miami", kickoffUTC:"2026-06-27T20:00:00Z" },
+            { id:69, group:"I", home:"Norway", away:"France", date:"Jun 28", time:"22:00 MVT", venue:"Atlanta", kickoffUTC:"2026-06-28T17:00:00Z" },
+            { id:70, group:"I", home:"Senegal", away:"Iraq", date:"Jun 28", time:"22:00 MVT", venue:"Boston", kickoffUTC:"2026-06-28T17:00:00Z" },
+            { id:71, group:"J", home:"Jordan", away:"Argentina", date:"Jun 28", time:"05:00 MVT", venue:"Houston", kickoffUTC:"2026-06-28T00:00:00Z" },
+            { id:72, group:"J", home:"Algeria", away:"Austria", date:"Jun 28", time:"05:00 MVT", venue:"Los Angeles", kickoffUTC:"2026-06-28T00:00:00Z" }
+        ];
+
+        var ADMIN_PASSWORD = "hih2026";
+        var WINDOW_HOURS = 12;
+        var currentGroupFilter = 'ALL';
+
+        function getMatchStatus(match) {
+            var now = new Date();
+            var kickoff = new Date(match.kickoffUTC);
+            var windowOpen = new Date(kickoff.getTime() - WINDOW_HOURS * 60 * 60 * 1000);
+            if (now >= kickoff) return 'started';
+            if (now >= windowOpen) return 'open';
+            return 'early';
+        }
+
+        function getCountdownText(match) {
+            var now = new Date();
+            var kickoff = new Date(match.kickoffUTC);
+            var windowOpen = new Date(kickoff.getTime() - WINDOW_HOURS * 60 * 60 * 1000);
+            var status = getMatchStatus(match);
+            if (status === 'started') return null;
+            if (status === 'open') {
+                var diff = kickoff.getTime() - now.getTime();
+                var hours = Math.floor(diff / (1000 * 60 * 60));
+                var mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                return { text: hours + 'h ' + mins + 'm until kickoff - Predict NOW!', closing: hours < 2, type: 'open' };
+            }
+            var diff2 = windowOpen.getTime() - now.getTime();
+            var hours2 = Math.floor(diff2 / (1000 * 60 * 60));
+            var mins2 = Math.floor((diff2 % (1000 * 60 * 60)) / (1000 * 60));
+            if (hours2 > 48) {
+                var days = Math.floor(hours2 / 24);
+                return { text: 'Opens in ' + days + 'd ' + (hours2 % 24) + 'h', closing: false, type: 'early' };
+            }
+            return { text: 'Opens in ' + hours2 + 'h ' + mins2 + 'm', closing: false, type: 'early' };
+        }
+
+        function getData() {
+            try { return JSON.parse(localStorage.getItem('hih_wc2026') || '{"users":{},"predictions":{},"results":{}}'); }
+            catch(e) { return {"users":{},"predictions":{},"results":{}}; }
+        }
+
+        function saveData(data) { localStorage.setItem('hih_wc2026', JSON.stringify(data)); }
+
+        var currentUser = null;
+        try { currentUser = JSON.parse(sessionStorage.getItem('hih_wc2026_user') || 'null'); }
+        catch(e) { currentUser = null; }
+
+        /* =============================================
+           FIXED CLOCK - uses Indian/Maldives timezone
+           ============================================= */
+        function updateClock() {
+            var now = new Date();
+            try {
+                var dateOpts = { timeZone: 'Indian/Maldives', weekday: 'short', month: 'short', day: 'numeric' };
+                var timeOpts = { timeZone: 'Indian/Maldives', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+                var dateStr = now.toLocaleDateString('en-US', dateOpts);
+                var timeStr = now.toLocaleTimeString('en-US', timeOpts);
+                var el = document.getElementById('liveClock');
+                if (el) el.textContent = dateStr + ' - ' + timeStr;
+            } catch(e) {
+                var utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+                var mvt = new Date(utcMs + (5 * 3600000));
+                var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+                var hh = String(mvt.getHours()).padStart(2, '0');
+                var mm = String(mvt.getMinutes()).padStart(2, '0');
+                var ss = String(mvt.getSeconds()).padStart(2, '0');
+                var dateStr2 = days[mvt.getDay()] + ', ' + months[mvt.getMonth()] + ' ' + mvt.getDate();
+                var el2 = document.getElementById('liveClock');
+                if (el2) el2.textContent = dateStr2 + ' - ' + hh + ':' + mm + ':' + ss;
+            }
+        }
+        setInterval(updateClock, 1000);
+        setInterval(function() {
+            if (currentUser && document.getElementById('tab-matches') && !document.getElementById('tab-matches').classList.contains('hidden')) {
+                renderMatches(currentGroupFilter);
+            }
+        }, 60000);
+
+        function login() {
+            var name = document.getElementById('staffName').value.trim();
+            var dept = document.getElementById('staffDept').value;
+            if (!name) { showToast('Please enter your name', 'error'); return; }
+            if (!dept) { showToast('Please select your department', 'error'); return; }
+            var userId = name.toLowerCase().replace(/\s+/g, '_');
+            var data = getData();
+            if (!data.users[userId]) {
+                data.users[userId] = { name: name, dept: dept, joinedAt: new Date().toISOString() };
+                saveData(data);
+            }
+            currentUser = { id: userId, name: name, dept: dept };
+            sessionStorage.setItem('hih_wc2026_user', JSON.stringify(currentUser));
+            showMainApp();
+            showToast('Welcome, ' + name + '!', 'success');
+        }
+
+        function logout() {
+            currentUser = null;
+            sessionStorage.removeItem('hih_wc2026_user');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
+        }
+
+        function showMainApp() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('userAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
+            document.getElementById('userName').textContent = currentUser.name;
+            document.getElementById('userDept').textContent = currentUser.dept;
+            updateClock();
+            renderGroupFilter();
+            renderMatches('ALL');
+            updateStats();
+        }
+
+        function switchTab(tab) {
+            var tabs = document.querySelectorAll('.nav-tab');
+            for (var i = 0; i < tabs.length; i++) { tabs[i].classList.remove('active'); }
+            event.target.classList.add('active');
+            var allTabs = ['matches', 'predictions', 'leaderboard', 'admin'];
+            for (var j = 0; j < allTabs.length; j++) {
+                var el = document.getElementById('tab-' + allTabs[j]);
+                if (allTabs[j] === tab) el.classList.remove('hidden');
+                else el.classList.add('hidden');
+            }
+            if (tab === 'predictions') renderMyPredictions();
+            if (tab === 'leaderboard') renderLeaderboard();
+            if (tab === 'admin') renderAdmin();
+        }
+
+        function renderGroupFilter() {
+            var groupSet = {}; var groupList = [];
+            for (var i = 0; i < MATCHES.length; i++) {
+                if (!groupSet[MATCHES[i].group]) { groupSet[MATCHES[i].group] = true; groupList.push(MATCHES[i].group); }
+            }
+            var groups = ['ALL'].concat(groupList);
+            var container = document.getElementById('groupFilter');
+            var html = '';
+            for (var g = 0; g < groups.length; g++) {
+                var label = groups[g] === 'ALL' ? 'All' : 'Group ' + groups[g];
+                var cls = groups[g] === 'ALL' ? 'group-btn active' : 'group-btn';
+                html += '<button class="' + cls + '" onclick="filterGroup(\'' + groups[g] + '\', this)">' + label + '</button>';
+            }
+            container.innerHTML = html;
+        }
+
+        function filterGroup(group, el) {
+            var btns = document.querySelectorAll('.group-btn');
+            for (var i = 0; i < btns.length; i++) { btns[i].classList.remove('active'); }
+            el.classList.add('active');
+            currentGroupFilter = group;
+            renderMatches(group);
+        }
+
+        function renderMatches(group) {
+            var data = getData();
+            var userPredictions = data.predictions[currentUser.id] || {};
+            var filtered = [];
+            for (var i = 0; i < MATCHES.length; i++) {
+                if (group === 'ALL' || MATCHES[i].group === group) filtered.push(MATCHES[i]);
+            }
+            var container = document.getElementById('matchesGrid');
+            var html = '';
+            for (var f = 0; f < filtered.length; f++) {
+                var m = filtered[f];
+                var pred = userPredictions[m.id];
+                var isPredicted = pred !== undefined;
+                var status = getMatchStatus(m);
+                var countdown = getCountdownText(m);
+                var countdownHTML = '';
+                if (status === 'started') {
+                    countdownHTML = '<div class="lock-banner"><span>&#128683;</span> LOCKED - Match has started / finished</div>';
+                } else if (status === 'early') {
+                    countdownHTML = '<div class="early-banner"><span>&#128274;</span> NOT YET OPEN' + (countdown ? ' - ' + countdown.text : '') + '</div>';
+                } else if (status === 'open') {
+                    countdownHTML = '<div class="open-banner">&#9989; PREDICTIONS OPEN</div>';
+                    if (countdown) {
+                        countdownHTML += '<div class="countdown-badge' + (countdown.closing ? ' closing' : '') + '">' + countdown.text + '</div>';
+                    }
+                }
+                var scoreInputHTML = '';
+                if (status === 'open') {
+                    var homeVal = isPredicted ? pred.home : '';
+                    var awayVal = isPredicted ? pred.away : '';
+                    var btnLabel = isPredicted ? 'Update Prediction' : 'Submit Prediction';
+                    scoreInputHTML = '<div class="score-input-row"><input type="number" class="score-input" id="home-' + m.id + '" min="0" max="20" value="' + homeVal + '" placeholder="0"><span class="score-separator">-</span><input type="number" class="score-input" id="away-' + m.id + '" min="0" max="20" value="' + awayVal + '" placeholder="0"></div><div class="match-actions"><button class="btn btn-gold btn-sm" onclick="savePrediction(' + m.id + ')">' + btnLabel + '</button></div>';
+                } else if (status === 'started') {
+                    if (isPredicted) {
+                        scoreInputHTML = '<div class="score-input-row"><input type="number" class="score-input" value="' + pred.home + '" disabled><span class="score-separator">-</span><input type="number" class="score-input" value="' + pred.away + '" disabled></div><div style="text-align:center;margin-top:8px;font-size:0.75rem;color:var(--success);font-weight:600;">Your prediction is locked in</div>';
+                    } else {
+                        scoreInputHTML = '<div class="lock-banner" style="background:rgba(239,68,68,0.06);"><span>&#10060;</span> No prediction submitted - Missed</div>';
+                    }
+                } else {
+                    scoreInputHTML = '<div style="text-align:center;margin-top:12px;font-size:0.78rem;color:var(--text-muted);">Prediction window not yet open</div>';
+                }
+                var cardClass = 'match-card';
+                if (isPredicted) cardClass += ' predicted';
+                if (status === 'started') cardClass += ' locked';
+                if (status === 'early') cardClass += ' early-lock';
+                html += '<div class="' + cardClass + '" id="match-' + m.id + '">';
+                html += '<div class="match-meta"><span class="match-group">Group ' + m.group + '</span><span class="match-date">' + m.date + ' | ' + m.time + '</span></div>';
+                html += '<div class="match-venue">' + m.venue + '</div>';
+                html += '<div class="match-teams"><div class="team"><div class="team-name">' + m.home + '</div></div><div class="vs-badge">VS</div><div class="team"><div class="team-name">' + m.away + '</div></div></div>';
+                html += countdownHTML + scoreInputHTML + '</div>';
+            }
+            container.innerHTML = html;
+        }
+
+        function savePrediction(matchId) {
+            var match = null;
+            for (var i = 0; i < MATCHES.length; i++) { if (MATCHES[i].id === matchId) { match = MATCHES[i]; break; } }
+            if (getMatchStatus(match) !== 'open') {
+                showToast('Prediction window is not open for this match!', 'error');
+                renderMatches(currentGroupFilter);
+                return;
+            }
+            var homeEl = document.getElementById('home-' + matchId);
+            var awayEl = document.getElementById('away-' + matchId);
+            if (!homeEl || !awayEl) return;
+            if (homeEl.value === '' || awayEl.value === '') { showToast('Please enter both scores!', 'error'); return; }
+            var data = getData();
+            if (!data.predictions[currentUser.id]) data.predictions[currentUser.id] = {};
+            data.predictions[currentUser.id][matchId] = { home: parseInt(homeEl.value), away: parseInt(awayEl.value), savedAt: new Date().toISOString() };
+            saveData(data);
+            showToast('Prediction saved: ' + match.home + ' ' + homeEl.value + ' - ' + awayEl.value + ' ' + match.away, 'success');
+            renderMatches(currentGroupFilter);
+            updateStats();
+        }
+
+        function renderMyPredictions() {
+            var data = getData();
+            var userPreds = data.predictions[currentUser.id] || {};
+            var container = document.getElementById('predictionsContainer');
+            var keys = Object.keys(userPreds);
+            if (keys.length === 0) { container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:40px;">No predictions yet.</p>'; return; }
+            var html = '';
+            for (var k = 0; k < keys.length; k++) {
+                var matchId = keys[k];
+                var match = null;
+                for (var i = 0; i < MATCHES.length; i++) { if (MATCHES[i].id === parseInt(matchId)) { match = MATCHES[i]; break; } }
+                var pred = userPreds[matchId];
+                var result = data.results[matchId];
+                var status = getMatchStatus(match);
+                var pointsBadge = '';
+                var statusBadge = status === 'started' ? ' <span style="font-size:0.7rem;color:var(--danger);">LOCKED</span>' : status === 'open' ? ' <span style="font-size:0.7rem;color:var(--success);">OPEN</span>' : ' <span style="font-size:0.7rem;color:var(--text-muted);">PENDING</span>';
+                if (result) {
+                    var pts = calcPoints(pred, result);
+                    var color = pts === 5 ? 'var(--success)' : pts > 0 ? 'var(--accent)' : 'var(--danger)';
+                    pointsBadge = '<span style="font-weight:800;color:' + color + ';margin-left:10px;">+' + pts + ' pts</span>';
+                }
+                html += '<div class="prediction-card"><div><div class="prediction-match">' + match.home + ' vs ' + match.away + statusBadge + '</div><div style="font-size:0.75rem;color:var(--text-muted);">Group ' + match.group + ' | ' + match.date + '</div></div><div><span class="prediction-score">' + pred.home + ' - ' + pred.away + '</span>' + pointsBadge + '</div></div>';
+            }
+            container.innerHTML = html;
+        }
+
+        function renderLeaderboard() {
+            var data = getData();
+            var leaderboard = [];
+            for (var userId in data.users) {
+                if (!data.users.hasOwnProperty(userId)) continue;
+                var userPreds = data.predictions[userId] || {};
+                var totalPoints = 0, exactCount = 0;
+                var predCount = Object.keys(userPreds).length;
+                for (var matchId in userPreds) {
+                    if (!userPreds.hasOwnProperty(matchId)) continue;
+                    if (data.results[matchId]) {
+                        var pts = calcPoints(userPreds[matchId], data.results[matchId]);
+                        totalPoints += pts;
+                        if (pts === 5) exactCount++;
+                    }
+                }
+                leaderboard.push({ name: data.users[userId].name, dept: data.users[userId].dept, points: totalPoints, predictions: predCount, exact: exactCount });
+            }
+            leaderboard.sort(function(a, b) { return b.points - a.points || b.exact - a.exact || b.predictions - a.predictions; });
+            var container = document.getElementById('leaderboardContainer');
+            if (leaderboard.length === 0) { container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:40px;">No players yet.</p>'; return; }
+            var html = '<table class="leaderboard-table"><thead><tr><th>#</th><th>Player</th><th>Dept</th><th>Predictions</th><th>Exact</th><th>Points</th></tr></thead><tbody>';
+            for (var i = 0; i < leaderboard.length; i++) {
+                var p = leaderboard[i];
+                var rc = i < 3 ? 'rank-' + (i + 1) : 'rank-other';
+                html += '<tr><td><span class="rank-badge ' + rc + '">' + (i + 1) + '</span></td><td style="font-weight:700;">' + p.name + '</td><td style="color:var(--text-muted);">' + p.dept + '</td><td>' + p.predictions + '</td><td>' + p.exact + '</td><td style="font-weight:800;color:var(--accent);font-size:1.1rem;">' + p.points + '</td></tr>';
+            }
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function calcPoints(pred, actual) {
+            if (pred.home === actual.home && pred.away === actual.away) return 5;
+            if ((pred.home - pred.away) === (actual.home - actual.away)) return 3;
+            var pr = pred.home > pred.away ? 'W' : pred.home < pred.away ? 'L' : 'D';
+            var ar = actual.home > actual.away ? 'W' : actual.home < actual.away ? 'L' : 'D';
+            if (pr === ar) return 1;
+            return 0;
+        }
+
+        function renderAdmin() {
+            var data = getData();
+            var container = document.getElementById('adminMatchesContainer');
+            var html = '';
+            for (var i = 0; i < MATCHES.length; i++) {
+                var m = MATCHES[i];
+                var result = data.results[m.id];
+                var hVal = result ? result.home : '';
+                var aVal = result ? result.away : '';
+                html += '<div class="admin-match-row"><div><div style="font-weight:700;font-size:0.9rem;">' + m.home + ' vs ' + m.away + '</div><div style="font-size:0.72rem;color:var(--text-muted);">Group ' + m.group + ' | ' + m.date + '</div></div><div class="admin-score-inputs"><input type="number" class="admin-score-input" id="admin-home-' + m.id + '" min="0" max="20" value="' + hVal + '" placeholder="-"><span style="font-weight:800;color:var(--text-muted);">-</span><input type="number" class="admin-score-input" id="admin-away-' + m.id + '" min="0" max="20" value="' + aVal + '" placeholder="-"></div></div>';
+            }
+            container.innerHTML = html;
+        }
+
+        function saveActualResults() {
+            if (document.getElementById('adminPass').value !== ADMIN_PASSWORD) { showToast('Incorrect admin password!', 'error'); return; }
+            var data = getData(); var count = 0;
+            for (var i = 0; i < MATCHES.length; i++) {
+                var hEl = document.getElementById('admin-home-' + MATCHES[i].id);
+                var aEl = document.getElementById('admin-away-' + MATCHES[i].id);
+                if (hEl && aEl && hEl.value !== '' && aEl.value !== '') {
+                    data.results[MATCHES[i].id] = { home: parseInt(hEl.value), away: parseInt(aEl.value) };
+                    count++;
+                }
+            }
+            saveData(data);
+            showToast(count + ' results saved and points calculated!', 'success');
+            updateStats();
+        }
+
+        function updateStats() {
+            var data = getData();
+            var userPreds = data.predictions[currentUser.id] || {};
+            var points = 0, exact = 0;
+            for (var matchId in userPreds) {
+                if (!userPreds.hasOwnProperty(matchId)) continue;
+                if (data.results[matchId]) {
+                    var pts = calcPoints(userPreds[matchId], data.results[matchId]);
+                    points += pts;
+                    if (pts === 5) exact++;
+                }
+            }
+            document.getElementById('statPredictions').textContent = Object.keys(userPreds).length;
+            document.getElementById('statPoints').textContent = points;
+            document.getElementById('statExact').textContent = exact;
+            document.getElementById('statPlayers').textContent = Object.keys(data.users).length;
+        }
+
+        function exportData() {
+            if (document.getElementById('adminPass').value !== ADMIN_PASSWORD) { showToast('Enter admin password first!', 'error'); return; }
+            var blob = new Blob([JSON.stringify(getData(), null, 2)], { type: 'application/json' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a'); a.href = url; a.download = 'hih_wc2026_data.json'; a.click();
+            URL.revokeObjectURL(url);
+            showToast('Data exported!', 'info');
+        }
+
+        function resetAllData() {
+            if (document.getElementById('adminPass').value !== ADMIN_PASSWORD) { showToast('Enter admin password first!', 'error'); return; }
+            if (!confirm('Are you sure? This will delete ALL predictions and results!')) return;
+            localStorage.removeItem('hih_wc2026');
+            showToast('All data cleared!', 'info');
+            location.reload();
+        }
+
+        function showToast(msg, type) {
+            type = type || 'info';
+            var toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = 'toast ' + type + ' show';
+            setTimeout(function() { toast.classList.remove('show'); }, 3500);
+        }
+
+        if (currentUser) showMainApp();
+    </script>
+</body>
+</html>
