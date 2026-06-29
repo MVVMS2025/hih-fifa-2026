@@ -307,7 +307,46 @@
         function findLocalMatchByTeams(home,away,eventDate){var h=normalizeTeamName(home),a=normalizeTeamName(away),eventTime=eventDate?new Date(eventDate).getTime():null;for(var i=0;i<MATCHES.length;i++){var mh=normalizeTeamName(MATCHES[i].home),ma=normalizeTeamName(MATCHES[i].away);if(mh===h&&ma===a)return MATCHES[i]}for(var j=0;j<MATCHES.length;j++){var rmh=normalizeTeamName(MATCHES[j].home),rma=normalizeTeamName(MATCHES[j].away);if(rmh===a&&rma===h)return MATCHES[j]}if(eventTime&&!isNaN(eventTime)){var bestMatch=null,bestDiff=Infinity;for(var k=0;k<MATCHES.length;k++){var localTime=new Date(MATCHES[k].kickoffUTC).getTime(),diffHours=Math.abs(eventTime-localTime)/3600000,lHome=normalizeTeamName(MATCHES[k].home),lAway=normalizeTeamName(MATCHES[k].away),teamOverlap=lHome===h||lHome===a||lAway===h||lAway===a;if(teamOverlap&&diffHours<=6&&diffHours<bestDiff){bestMatch=MATCHES[k];bestDiff=diffHours}}if(bestMatch)return bestMatch}return null}
         async function fetchOnlineScores(){if(document.getElementById('adminPass').value!==ADMIN_PASSWORD){showToast('Enter admin password first','error');return}var btn=document.getElementById('fetchScoresBtn');if(btn){btn.disabled=true;btn.textContent='Fetching...'}showToast('Fetching scores from TheSportsDB...','info');try{var response=await fetch(THESPORTSDB_API_URL+'&v='+Date.now());if(!response.ok)throw new Error('TheSportsDB API failed with status '+response.status);var data=await response.json(),events=data.events||[],savedCount=0,skippedCount=0,notMatched=[];for(var i=0;i<events.length;i++){var ev=events[i],homeName=ev.strHomeTeam||'',awayName=ev.strAwayTeam||'',homeScore=ev.intHomeScore,awayScore=ev.intAwayScore;if(homeScore===null||awayScore===null||homeScore===''||awayScore===''||homeScore===undefined||awayScore===undefined){skippedCount++;continue}var eventDate=ev.strTimestamp||ev.dateEvent||null,localMatch=findLocalMatchByTeams(homeName,awayName,eventDate);if(!localMatch){notMatched.push({providerHome:homeName,providerAway:awayName,providerDate:eventDate,providerScore:homeScore+'-'+awayScore});skippedCount++;continue}await saveResultToDB(localMatch.id,{home:parseInt(homeScore),away:parseInt(awayScore),source:'TheSportsDB',apiId:ev.idEvent||'',updatedAt:new Date().toISOString()});savedCount++}showToast(savedCount+' scores imported','success');renderAdmin();renderLeaderboard();updateStats();console.log('TheSportsDB total events:',events.length);console.log('TheSportsDB saved matches:',savedCount);console.log('TheSportsDB skipped matches:',skippedCount);if(notMatched.length)console.warn('Not matched:',notMatched)}catch(e){console.error(e);showToast('Could not fetch from TheSportsDB','error')}finally{if(btn){btn.disabled=false;btn.textContent='Fetch Online Scores'}}}
         function exportData(){if(document.getElementById('adminPass').value!==ADMIN_PASSWORD){showToast('Enter password','error');return}var b=new Blob([JSON.stringify(cachedData,null,2)],{type:'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='hih_wc2026_data.json';a.click();URL.revokeObjectURL(u);showToast('Exported','info')}
-        function resetAllData(){if(document.getElementById('adminPass').value!==ADMIN_PASSWORD){showToast('Enter password','error');return}if(!confirm('Delete ALL data?'))return;db.ref('hih_wc2026').set({users:{},predictions:{},results:{}});showToast('All cleared','info')}
+        async function resetAllData(){
+    if(document.getElementById("adminPass").value !== ADMIN_PASSWORD){
+        showToast("Enter password","error");
+        return;
+    }
+
+    var confirmText = prompt("Type RESET to delete all users, predictions, and results");
+
+    if(confirmText !== "RESET"){
+        showToast("Reset cancelled","info");
+        return;
+    }
+
+    try{
+        await db.ref().update({
+            "hih_wc2026/users": null,
+            "hih_wc2026/predictions": null,
+            "hih_wc2026/results": null,
+            "hih_wc2026/test_write": null
+        });
+
+        cachedData = {
+            users: {},
+            predictions: {},
+            results: {}
+        };
+
+        currentUser = null;
+        sessionStorage.removeItem("hih_wc2026_user");
+
+        showToast("All data reset successfully","success");
+
+        document.getElementById("mainApp").classList.add("hidden");
+        document.getElementById("loginScreen").classList.remove("hidden");
+
+    }catch(e){
+        console.error("Reset failed:", e);
+        showToast("Reset failed. Check Firebase rules.","error");
+    }
+}
         function showToast(m,t){t=t||'info';var ts=document.getElementById('toast');ts.textContent=m;ts.className='toast '+t+' show';setTimeout(function(){ts.classList.remove('show')},3500)}
         loadAllData(function(){document.getElementById('loadingOverlay').style.display='none';if(currentUser)showMainApp()});
         db.ref('.info/connected').on('value',function(s){var el=document.getElementById('dbStatus');if(el){if(s.val()===true){el.className='db-status connected';el.innerHTML='&#9889; Connected to cloud database'}else{el.className='db-status disconnected';el.innerHTML='&#9888; Disconnected - Reconnecting...'}}});
