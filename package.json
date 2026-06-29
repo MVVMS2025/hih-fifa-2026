@@ -1,8 +1,12 @@
 {
-  "name": "hih-worldcup-2026-score-sync",
-  "version": "4.0.0",
+  "name": "hih-worldcup-2026-live-sync",
+  "version": "4.1.0",
   "private": true,
   "type": "commonjs",
-  "scripts": { "sync:scores": "node scripts/sync-scores.js" },
-  "dependencies": { "firebase-admin": "^13.4.0" }
+  "scripts": {
+    "sync:scores": "node scripts/sync-scores.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  }
 }
